@@ -51,6 +51,21 @@
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <!-- Left Side Of Navbar -->
                     <ul class="navbar-nav me-auto">
+                         <li class="mx-2" >
+                            <a class="nav-link" href="{{url('client')}}">
+                                Clients
+                            </a>
+                         </li>
+                         <li class="mx-2">
+                            <a class="nav-link" href="{{url('versement')}}">
+                                Versement
+                            </a>
+                         </li>
+                         <li class="mx-2">
+                            <a class="nav-link" href="{{url('audit-versement')}}">
+                                Audit-versement
+                            </a>
+                         </li>
 
                     </ul>
 
