@@ -14,20 +14,20 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('audit_versement');
-});
+})->middleware('auth');;
 
 Route::get('/audit-produit', function () {
     return view('audit-produit');
-});
+})->middleware('auth');
 Route::get('/audit-versement', function () {
     return view('audit_versement');
 });
 Route::get('/client', function () {
     return view('client');
-});
+})->middleware('auth');
 Route::get('/versement', function () {
     return view('versement');
-});
+})->middleware('auth');
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');

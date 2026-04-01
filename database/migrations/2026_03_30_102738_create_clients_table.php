@@ -12,8 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('clients', function (Blueprint $table) {
-            $table->id();
-            $table->bigInteger('num_compte');
+            $table->id('num_compte');
             $table->string('nomclient');
             $table->bigInteger('solde');
             $table->timestamps();

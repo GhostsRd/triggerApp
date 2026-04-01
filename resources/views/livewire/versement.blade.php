@@ -1,8 +1,9 @@
-<div class="container">
+<div class="container bg-white shadow p-2 rounded-2">
 
-    <h3>versements</h3>
+    <h4 class="text-muted fw-bold mt-1">Versements</h4>
+    <hr>
     <!-- Button trigger modal -->
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+    <button type="button" class="btn btn-primary btn-sm mb-1" data-bs-toggle="modal" data-bs-target="#exampleModal">
         Nouveau
     </button>
 
@@ -13,7 +14,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                    <h5 class="modal-title" id="exampleModalLabel">Nouveau virement</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
@@ -38,7 +39,7 @@
                            <input type="number" name="" id="" wire:model="montant" class="form-control">
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
                             <button type="submit" class="btn btn-primary">Sauvegarder</button>
                             
                             @else
@@ -96,7 +97,7 @@
                           
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
                             <button type="submit" class="btn btn-primary">Sauvegarder</button>
                             
                       
@@ -107,15 +108,15 @@
             </div>
         </div>
     </div>
-    <table class="table">
+    <table class="table bg-white table-sm">
         <thead>
             <tr>
-
-                <th scope="col">Numero de versement</th>
-                <th scope="col">Numero de cheque</th>
-                <th scope="col">Numero de compte</th>
-                <th scope="col">Montant</th>
-                <th>Action</th>
+                <th class="bg-white" scope="col">Client</th>
+                <th class="bg-white" scope="col">N° versement</th>
+                <th class="bg-white" scope="col">N° cheque</th>
+                <th class="bg-white" scope="col">N° compte</th>
+                <th class="bg-white" scope="col">Montant (Ar)</th>
+                <th class="bg-white ">Action</th>
 
 
             </tr>
@@ -123,14 +124,31 @@
         <tbody>
             @foreach ($versements as $versement)
             <tr>
+                <td class="bg-white">
+                    @foreach ($clients as $client)
+                        @if ($client->num_compte == $versement->num_compte)
+                            <img src="https://ui-avatars.com/api/?name={{ $client->nomclient }}&background=808080&color=ffff"  class="rounded-circle" width="20" height="20">
+                        {{ $client->nomclient }}
+                        @endif
 
-                <td>{{ $versement->num_versement }}</td>
-                <td>{{ $versement->num_cheque }}</td>
-                <td>{{ $versement->num_compte }}</td>
-                <td>{{ $versement->montant }}</td>
+                    @endforeach
+                </td>
+                <td class="bg-white">{{ $versement->num_versement }}</td>
+                <td class="bg-white">{{ $versement->num_cheque }}</td>
+                <td class="bg-white">
+                                    {{ trim(chunk_split($versement->num_compte, 4, ' ')) }}
 
-                <td><button class="btn btn-sm " data-bs-toggle="modal" data-bs-target="#exampleModal1"  wire:click="edit({{ $versement->num_versement }})">Edit</button>
-                    <button class="btn btn-sm" wire:click="delete({{ $versement->num_versement }})">Delete</button>
+                </td>
+                <td class="bg-white">
+                    + {{ number_format($versement->montant , 0, ',', ' ') }}
+                </td>
+
+                <td class="bg-white"><button class="btn btn-sm " data-bs-toggle="modal" data-bs-target="#exampleModal1"  wire:click="edit({{ $versement->num_versement }})">
+                    <i class="bi bi-pencil"></i> 
+                </button>
+                    <button class="btn btn-sm" wire:click="delete({{ $versement->num_versement }})">
+                        <i class="bi bi-trash"></i>
+                    </button>
                 </td>
             </tr>
             @endforeach

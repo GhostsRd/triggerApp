@@ -22,30 +22,73 @@ class Versement extends Component
 
     public function store(ModelVersement $versenent,Client $client){
         
+        dd($dernier_versement);
         $current_user = Client::where('num_compte',$this->num_compte)->first();
+        DB::statement("SET @app_ancien_montant = ?", [$current_user->solde]);
         if($current_user){
             $current_user->solde = $this->montant + $current_user->solde;
             $current_user->save();
-        }else{
-              echo 'introuvable user';
-        }
-        $client_nouveausolde = Client::where('num_compte',$this->num_compte)->first();
-        $dernier_versement = ModelVersement::latest()->first()->num_versement + 1;
-         //dd($dernier_versement);
-        DB::statement("SET @app_type_action = ?", [auth()->user()->email ?? null]);
-        DB::statement("SET @app_num_compte = ?", [$this->num_compte ?? null]);
-        DB::statement("SET @app_nom_client = ?", [$current_user->nomclient ?? null]);
-        DB::statement("SET @app_ancien_montant = ?", [$current_user->solde]);
-        DB::statement("SET @app_utilisateur = ?", [auth()->user()->name ?? null]);
-        DB::statement("SET @app_nouveau_montant = ?", [$client_nouveausolde->solde]);
-        DB::statement("SET @app_num_versement = ?", [$dernier_versement ?? null]);
-
+            }else{
+                echo 'introuvable user';
+                }
+                $client_nouveausolde = Client::where('num_compte',$this->num_compte)->first();
+                //maka le dernier numero de versement plus 1 pour le nouceau
+                $exist_versement = ModelVersement::first();
+                if($exist_versement != null){
+                    $numero_versement = ModelVersement::latest()->first()->num_versement + 1;
+                    $num_new_versement =  $numero_versement + 1;
+                    DB::statement("SET @app_num_versement = ?", [$numero_versement  ?? null]);
+                    }else{
+                        DB::statement("SET @app_num_versement = ?", [ 1  ?? null]);
+                        }
+                        DB::statement("SET @app_type_action = ?", ['INSERTION']);
+                        DB::statement("SET @app_num_compte = ?", [$this->num_compte ?? null]);
+                        DB::statement("SET @app_nom_client = ?", [$current_user->nomclient ?? null]);
+                        DB::statement("SET @app_utilisateur = ?", [auth()->user()->name ?? null]);
+                        DB::statement("SET @app_nouveau_montant = ?", [$client_nouveausolde->solde]);
+                        //dd($exist_versement);
+        
         $versenent->num_cheque = $this->num_cheque; 
         $versenent->num_compte = $this->num_compte; 
         $versenent->montant = $this->montant; 
         $versenent->save();
-        
-        //dd($current_user->solde);
+        /*
+        DELIMITER $$
+
+CREATE TRIGGER after_insert_versement
+        AFTER INSERT ON versements
+        FOR EACH ROW
+        BEGIN
+            INSERT INTO audit_versements (
+                type_action,
+                num_versement,
+                num_compte,
+                nom_client,
+                ancien_montant,
+                nouveau_montant,
+                utilisateur,
+                created_at,
+                updated_at
+            )
+            VALUES (
+                @app_type_action,
+                NEW.num_versement,
+                NEW.num_compte,
+                IFNULL(@app_nom_client, 'INCONNU'),
+                IFNULL(@app_ancien_montant, 0),
+                IFNULL(@app_nouveau_montant, NEW.montant),
+                IFNULL(@app_utilisateur, 'SYSTEM'),
+                NOW(),
+                NOW()
+            );
+END$$
+DELIMITER ;
+
+
+        CREATE TRIGGER after_update_versement AFTER UPDATE ON versements FOR EACH ROW BEGIN INSERT INTO audit_versements ( type_action, num_versement, num_compte, nom_client, ancien_montant, nouveau_montant, utilisateur, created_at, updated_at ) VALUES ( @app_type_action, -- type d'action NEW.num_versement, NEW.num_compte, IFNULL(@app_nom_client, 'INCONNU'), OLD.montant, -- ancien montant NEW.montant, -- nouveau montant IFNULL(@app_utilisateur, 'SYSTEM'), NOW(), NOW() ); END;
+ */
+    
+
        $this->reset();
        
     }
@@ -66,35 +109,91 @@ class Versement extends Component
     }
 
     public function update(){
+        /*  DELIMITER $$
+CREATE TRIGGER after_update_versement 
+AFTER UPDATE ON versements
+FOR EACH ROW BEGIN INSERT INTO audit_versements ( type_action, num_versement, num_compte, nom_client, ancien_montant, nouveau_montant, utilisateur, created_at, updated_at ) VALUES 
+( @app_type_action, -- type d'action 
+ NEW.num_versement,
+ NEW.num_compte, 
+ IFNULL(@app_nom_client, 'INCONNU'), 
+ IFNULL(@app_ancien_montant, 0), -- ancien montant 
+ IFNULL(@app_nouveau_montant, 0), -- nouveau montant 
+ IFNULL(@app_utilisateur, 'SYSTEM'), 
+ NOW(),
+ NOW() 
+); 
+  END$$
+
+  DELIMITER ; */
+
     $current_versement = ModelVersement::where('num_versement',$this->num_versement )->first();
     $current_user = Client::where('num_compte', $current_versement->num_compte)->first();
+    
     if($this->operation == 'exces'){
-        $current_versement->montant = (float) $current_versement->montant - (float) $this->new_montant; 
-        ModelVersement::where('num_versement',$this->num_versement )->update(
-            ['montant' => $current_versement->montant],
-        );
+        $nouveau_versement_montant= (float) $current_versement->montant - (float) $this->new_montant; 
+       // dd($current_user->solde);
+        DB::statement("SET @app_type_action = ?", ['UPDATE']);
+        DB::statement("SET @app_ancien_montant = ?", [$current_user->solde ?? null]);
+        DB::statement("SET @app_num_compte = ?", [$current_versement->num_compte ?? null]);
+        DB::statement("SET @app_nom_client = ?", [$current_user->nomclient ?? null]);
+        DB::statement("SET @app_utilisateur = ?", [auth()->user()->name ?? null]);
         
-        //dd($current_versement->montant,$this->new_montant);
-        $current_user->solde = $current_user->solde - $this->new_montant;
-        $current_user->save();
-    }
+        $nouveau_user_solde = $current_user->solde - $this->new_montant;
+        
+        DB::statement("SET @app_nouveau_montant = ?", [$nouveau_user_solde ]);
+        DB::statement("SET @app_num_versement = ?", [$this->num_versement ?? null]);
+
+
+
+        ModelVersement::where('num_versement',$this->num_versement )->update(
+            ['montant' => $nouveau_versement_montant],
+            );
+            
+            
+            Client::where('num_compte', $current_versement->num_compte)->update(
+                ['solde' => $nouveau_user_solde ,  ]
+                );
+                
+                //dd($current_versement->montant,$this->new_montant,$current_versement->num_compte);
+                
+                }
+                DB::statement("SET @app_ancien_montant = ?", [$current_user->solde ?? null]);
     if($this->operation == 'manque'){
-       $current_versement->montant = $current_versement->montant + $this->new_montant; 
+       $nouveau_versement_solde = $current_versement->montant + $this->new_montant; 
+   
+        DB::statement("SET @app_type_action = ?", ['UPDATE']);
+        DB::statement("SET @app_num_compte = ?", [$current_versement->num_compte ?? null]);
+        DB::statement("SET @app_nom_client = ?", [$current_user->nomclient ?? null]);
+        DB::statement("SET @app_utilisateur = ?", [auth()->user()->name ?? null]);
+        $nouveau_user_solde = $current_user->solde + $this->new_montant;
+        DB::statement("SET @app_nouveau_montant = ?", [$nouveau_user_solde ?? null]);
+        DB::statement("SET @app_num_versement = ?", [$this->num_versement ?? null]);
+
        ModelVersement::where('num_versement',$this->num_versement )->update(
-            ['montant' => $current_versement->montant],
+            ['montant' => $nouveau_versement_solde],
         );
-        $current_user->solde = $current_user->solde + $this->new_montant;
+        $current_user->solde = $nouveau_user_solde;
         $current_user->save();
     }
     if($this->operation == 'erreur'){
-    $current_versement->montant = 0; 
-    ModelVersement::where('num_versement',$this->num_versement )->update(
-            ['montant' => $current_versement->montant],
-        );
-    $current_user->solde = $current_user->solde - $this->montant;
-    $current_user->save();
+        $current_versement->montant = 0; 
+
+        DB::statement("SET @app_type_action = ?", ['UPDATE']);
+        DB::statement("SET @app_num_compte = ?", [$current_versement->num_compte ?? null]);
+        DB::statement("SET @app_nom_client = ?", [$current_user->nomclient ?? null]);
+        DB::statement("SET @app_utilisateur = ?", [auth()->user()->name ?? null]);
+        $current_user->solde = $current_user->solde - $this->new_montant;
+        DB::statement("SET @app_nouveau_montant = ?", [$current_user->solde]);
+        DB::statement("SET @app_num_versement = ?", [$this->num_versement ?? null]);
+
+        ModelVersement::where('num_versement',$this->num_versement )->update(
+                ['montant' => $current_versement->montant],
+            );
+        $current_user->solde = $current_user->solde - $this->montant;
+        $current_user->save();
     }
-    $this->emitSelf('refresh');
+        return redirect()->to('/versement');
     }
     public function mount(){
       
@@ -106,15 +205,64 @@ class Versement extends Component
        $this->current_user;
     }
     public function delete($id){
-     
-        $versement = ModelVersement::where('num_versement',$id)->delete();
+
+
+        $versement = ModelVersement::where('num_versement',$id)->first();
+        $client = Client::where('num_compte',$versement->num_compte)->first();
+        
+        DB::statement("SET @app_ancien_montant = ?", [$client->solde]);
+        DB::statement("SET @app_type_action = ?", ['Delete']);
+        DB::statement("SET @app_num_compte = ?", [$client->num_compte ?? null]);
+        DB::statement("SET @app_nom_client = ?", [$client->nomclient ?? null]);
+        DB::statement("SET @app_utilisateur = ?", [auth()->user()->name ?? null]);
+        DB::statement("SET @app_nouveau_montant = ?", ['0']);
+        DB::statement("SET @app_num_versement = ?", [$id ?? null]);
+      
+    /*
+
+            DELIMITER $$
+
+        CREATE TRIGGER after_delete_versement
+        AFTER DELETE ON versements
+        FOR EACH ROW
+        BEGIN
+            INSERT INTO audit_versements (
+                type_action,
+                num_versement,
+                num_compte,
+                nom_client,
+                ancien_montant,
+                nouveau_montant,
+                utilisateur,
+                created_at,
+                updated_at
+            )
+            VALUES (
+                'DELETE',
+                IFNULL(@app_num_versement, 'INCONNU'),
+                IFNULL(@app_num_compte, 'INCONNU'),
+                IFNULL(@app_nom_client, 'INCONNU'),
+                IFNULL(@app_ancien_montant, 'INCONNU'),
+                IFNULL(@app_nouveau_montant, 'NULL'),
+                IFNULL(@app_utilisateur, 'SYSTEM'),
+                NOW(),
+                NOW()
+            );
+
+        END$$
+
+        DELIMITER ;
+    */
+        $delete = ModelVersement::where('num_versement',$id)->delete();
      
     }
     public function render()
     {   
         $versement = Modelversement::all();
+        $clients = Client::all();
         return view('livewire.versement',[
             'versements' => $versement,
+            'clients' => $clients
         ]);
     }
     
