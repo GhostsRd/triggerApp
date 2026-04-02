@@ -147,7 +147,7 @@
                     <i class="bi bi-pencil"></i> 
                 </button>
                     <button class="btn btn-sm" wire:click="delete({{ $versement->num_versement }})">
-                        <i class="bi bi-trash"></i>
+                        <i class="bi bi-trash text-danger"></i>
                     </button>
                 </td>
             </tr>

@@ -41,7 +41,7 @@ class Versement extends Component
                     }else{
                         DB::statement("SET @app_num_versement = ?", [ 1  ?? null]);
                         }
-                        DB::statement("SET @app_type_action = ?", ['INSERTION']);
+                        DB::statement("SET @app_type_action = ?", ['CREATION']);
                         DB::statement("SET @app_num_compte = ?", [$this->num_compte ?? null]);
                         DB::statement("SET @app_nom_client = ?", [$current_user->nomclient ?? null]);
                         DB::statement("SET @app_utilisateur = ?", [auth()->user()->name ?? null]);
@@ -55,34 +55,34 @@ class Versement extends Component
         /*
         DELIMITER $$
 
-CREATE TRIGGER after_insert_versement
-        AFTER INSERT ON versements
-        FOR EACH ROW
-        BEGIN
-            INSERT INTO audit_versements (
-                type_action,
-                num_versement,
-                num_compte,
-                nom_client,
-                ancien_montant,
-                nouveau_montant,
-                utilisateur,
-                created_at,
-                updated_at
-            )
-            VALUES (
-                @app_type_action,
-                NEW.num_versement,
-                NEW.num_compte,
-                IFNULL(@app_nom_client, 'INCONNU'),
-                IFNULL(@app_ancien_montant, 0),
-                IFNULL(@app_nouveau_montant, NEW.montant),
-                IFNULL(@app_utilisateur, 'SYSTEM'),
-                NOW(),
-                NOW()
-            );
-END$$
-DELIMITER ;
+        CREATE TRIGGER after_insert_versement
+                AFTER INSERT ON versements
+                FOR EACH ROW
+                BEGIN
+                    INSERT INTO audit_versements (
+                        type_action,
+                        num_versement,
+                        num_compte,
+                        nom_client,
+                        ancien_montant,
+                        nouveau_montant,
+                        utilisateur,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES (
+                        @app_type_action,
+                        NEW.num_versement,
+                        NEW.num_compte,
+                        IFNULL(@app_nom_client, 'INCONNU'),
+                        IFNULL(@app_ancien_montant, 0),
+                        IFNULL(@app_nouveau_montant, NEW.montant),
+                        IFNULL(@app_utilisateur, 'SYSTEM'),
+                        NOW(),
+                        NOW()
+                    );
+        END$$
+        DELIMITER ;
 
 
         CREATE TRIGGER after_update_versement AFTER UPDATE ON versements FOR EACH ROW BEGIN INSERT INTO audit_versements ( type_action, num_versement, num_compte, nom_client, ancien_montant, nouveau_montant, utilisateur, created_at, updated_at ) VALUES ( @app_type_action, -- type d'action NEW.num_versement, NEW.num_compte, IFNULL(@app_nom_client, 'INCONNU'), OLD.montant, -- ancien montant NEW.montant, -- nouveau montant IFNULL(@app_utilisateur, 'SYSTEM'), NOW(), NOW() ); END;
@@ -133,7 +133,7 @@ FOR EACH ROW BEGIN INSERT INTO audit_versements ( type_action, num_versement, nu
     if($this->operation == 'exces'){
         $nouveau_versement_montant= (float) $current_versement->montant - (float) $this->new_montant; 
        // dd($current_user->solde);
-        DB::statement("SET @app_type_action = ?", ['UPDATE']);
+        DB::statement("SET @app_type_action = ?", ['MODIFICATION']);
         DB::statement("SET @app_ancien_montant = ?", [$current_user->solde ?? null]);
         DB::statement("SET @app_num_compte = ?", [$current_versement->num_compte ?? null]);
         DB::statement("SET @app_nom_client = ?", [$current_user->nomclient ?? null]);
@@ -162,7 +162,7 @@ FOR EACH ROW BEGIN INSERT INTO audit_versements ( type_action, num_versement, nu
     if($this->operation == 'manque'){
        $nouveau_versement_solde = $current_versement->montant + $this->new_montant; 
    
-        DB::statement("SET @app_type_action = ?", ['UPDATE']);
+        DB::statement("SET @app_type_action = ?", ['MODIFICATION']);
         DB::statement("SET @app_num_compte = ?", [$current_versement->num_compte ?? null]);
         DB::statement("SET @app_nom_client = ?", [$current_user->nomclient ?? null]);
         DB::statement("SET @app_utilisateur = ?", [auth()->user()->name ?? null]);
@@ -179,7 +179,7 @@ FOR EACH ROW BEGIN INSERT INTO audit_versements ( type_action, num_versement, nu
     if($this->operation == 'erreur'){
         $current_versement->montant = 0; 
 
-        DB::statement("SET @app_type_action = ?", ['UPDATE']);
+        DB::statement("SET @app_type_action = ?", ['MODIFICATION']);
         DB::statement("SET @app_num_compte = ?", [$current_versement->num_compte ?? null]);
         DB::statement("SET @app_nom_client = ?", [$current_user->nomclient ?? null]);
         DB::statement("SET @app_utilisateur = ?", [auth()->user()->name ?? null]);
@@ -211,7 +211,7 @@ FOR EACH ROW BEGIN INSERT INTO audit_versements ( type_action, num_versement, nu
         $client = Client::where('num_compte',$versement->num_compte)->first();
         
         DB::statement("SET @app_ancien_montant = ?", [$client->solde]);
-        DB::statement("SET @app_type_action = ?", ['Delete']);
+        DB::statement("SET @app_type_action = ?", ['SUPPRESSION']);
         DB::statement("SET @app_num_compte = ?", [$client->num_compte ?? null]);
         DB::statement("SET @app_nom_client = ?", [$client->nomclient ?? null]);
         DB::statement("SET @app_utilisateur = ?", [auth()->user()->name ?? null]);

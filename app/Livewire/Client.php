@@ -12,12 +12,19 @@ class Client extends Component
     public $id;
     
     public function edit($id){
-        dd($id);
+
         $client = clientModels::where('num_compte',$id)->first();
         $this->nomclient = $client->nomclient;
         $this->solde = $client->solde;
         $this->id = $id;
         
+    }
+    public function update(){
+        $client = clientModels::where('num_compte',$this->id)->update([
+            'nomclient' =>$this->nomclient,
+        ]);
+        return redirect()->to('/client');
+
     }
     public function mount(){
         $this->nomclient;
@@ -26,7 +33,7 @@ class Client extends Component
     }
     public function render()
     {
-        $this->data = clientModels::where('nomclient',auth()->user()->name)->get();
+        $this->data = clientModels::where('num_compte',auth()->user()->id)->get();
         
         if(auth()->user()->email == config('app.email') ){
       
