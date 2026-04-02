@@ -22,7 +22,7 @@ class Versement extends Component
 
     public function store(ModelVersement $versenent,Client $client){
         
-        //dd($dernier_versement);
+        //dd($dernier_versement); okokok
         $current_user = Client::where('num_compte',$this->num_compte)->first();
         DB::statement("SET @app_ancien_montant = ?", [$current_user->solde]);
         if($current_user){
