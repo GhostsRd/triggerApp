@@ -10,6 +10,7 @@ class Client extends Model
     use HasFactory;
 
     protected $table = 'clients';
+    protected $primaryKey = 'num_compte';
     // Colonnes assignables
     protected $fillable = [
         'num_compte',
