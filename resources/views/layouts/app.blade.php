@@ -99,6 +99,8 @@
                             <li class="nav-item dropdown">
                                 <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button"
                                     data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
+                            <img src="https://ui-avatars.com/api/?name={{ Auth::user()->name }}&background=808080&color=ffff"  class="rounded-circle" width="20" height="20">
+
                                     {{ Auth::user()->name }}
                                 </a>
 
